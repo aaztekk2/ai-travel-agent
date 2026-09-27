@@ -1,5 +1,5 @@
 import './style.css';
-import { getCoordinates } from './weather.js';
+import { getCoordinates, getWeather } from './weather.js';
 
 function showScreen(name) {
   const screens = document.querySelectorAll('.screen');
@@ -105,8 +105,10 @@ document.getElementById('trip-form').addEventListener('submit', async (e) => {
   
   try {
     const coords = await getCoordinates(trip.to);
+    const weather = await getWeather(coords.lat, coords.lon, trip.start);
     console.log("Trip Details:", trip);
     console.log("Found Coordinates:", coords);
+    console.log("Weather:", weather);
     showScreen('results');
   } catch (err) {
     console.error(err);
