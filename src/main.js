@@ -1,5 +1,6 @@
 import './style.css';
 import { getCoordinates, getWeather, summarizeWeather } from './weather.js';
+import { getTripPlan } from './ai.js';
 
 function showScreen(name) {
   const screens = document.querySelectorAll('.screen');
@@ -106,16 +107,24 @@ document.getElementById('trip-form').addEventListener('submit', async (e) => {
   try {
     const coords = await getCoordinates(trip.to);
     const weather = await getWeather(coords.lat, coords.lon, trip.start);
+    const summary = summarizeWeather(weather, trip.start, trip.end);
+    
     console.log("Trip Details:", trip);
     console.log("Found Coordinates:", coords);
-    console.log(summarizeWeather(weather, trip.start, trip.end));
+    console.log("Weather Summary:", summary);
+    
+    const plan = await getTripPlan(trip, coords, summary);
+    console.log("Trip Plan:", plan);
+    
     showScreen('results');
   } catch (err) {
     console.error(err);
     if (err.message === "City not found") {
       errorEl.textContent = "We couldn't find that destination. Check the spelling.";
-    } else {
+    } else if (err.message.startsWith("Weather API error") || err.message.startsWith("Geocoding API error")) {
       errorEl.textContent = "Couldn't reach the weather service. Try again.";
+    } else {
+      errorEl.textContent = "Couldn't generate your trip plan. Try again.";
     }
   }
 });
