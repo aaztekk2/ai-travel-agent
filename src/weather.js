@@ -47,3 +47,53 @@ export async function getWeather(lat, lon, startDate) {
     
     return { type, data };
 }
+
+export function summarizeWeather(weatherObj, startDate, endDate) {
+    const { type, data } = weatherObj;
+    
+    if (type === "current") {
+        const temp = Math.round(data.main.temp);
+        const desc = data.weather[0].description;
+        return `Current weather today (trip is too far ahead for a forecast): ${temp}°C, ${desc}.`;
+    }
+    
+    if (type === "forecast") {
+        let filtered = data.list.filter(item => {
+            const dateStr = item.dt_txt.slice(0, 10);
+            return dateStr >= startDate && dateStr <= endDate;
+        });
+        
+        if (filtered.length === 0) {
+            filtered = data.list;
+        }
+        
+        let minTemp = Infinity;
+        let maxTemp = -Infinity;
+        const descCounts = {};
+        
+        for (const item of filtered) {
+            const temp = item.main.temp;
+            if (temp < minTemp) minTemp = temp;
+            if (temp > maxTemp) maxTemp = temp;
+            
+            const desc = item.weather[0].description;
+            descCounts[desc] = (descCounts[desc] || 0) + 1;
+        }
+        
+        let mostFrequentDesc = "";
+        let maxCount = 0;
+        for (const desc in descCounts) {
+            if (descCounts[desc] > maxCount) {
+                maxCount = descCounts[desc];
+                mostFrequentDesc = desc;
+            }
+        }
+        
+        minTemp = Math.round(minTemp);
+        maxTemp = Math.round(maxTemp);
+        
+        return `Forecast for the trip dates: ${minTemp}°C to ${maxTemp}°C, mostly ${mostFrequentDesc}.`;
+    }
+    
+    return "Weather summary unavailable.";
+}
