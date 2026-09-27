@@ -5,13 +5,14 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true
 });
 
-export async function getTripPlan(trip, destination, weatherSummary) {
+export async function getTripPlan(trip, destination, weatherSummary, originName = trip.from) {
   const systemMessage = `You are a helpful travel assistant. You must output only a JSON object.
 
 Rules:
 - If the weather data says it is current weather because the trip is too far ahead, do not present it as the trip's weather. Instead, describe what the weather is typically like at the destination during those months, and make clear it is a general seasonal expectation, not a forecast.
 - If the weather data is a forecast for the trip dates, use those exact temperatures and conditions and say it is a forecast.
 - If the budget is clearly too low for the trip, say so honestly in the flight and hotel fields instead of pretending it works.
+- Do not name specific airlines or hotels unless you are confident they actually serve this route or city; otherwise describe the type of option (for example 'a low-cost carrier with one connection').
 
 The JSON object must exactly match the following structure, with no additional keys:
 {
@@ -29,7 +30,7 @@ The JSON object must exactly match the following structure, with no additional k
 }`;
 
   const userMessage = `Please create a trip plan based on the following details:
-- Departure: ${trip.from}
+- Departure: ${originName}
 - Destination: ${destination.name}, ${destination.country}
 - Dates: ${trip.start} to ${trip.end}
 - Travelers: ${trip.travelers}

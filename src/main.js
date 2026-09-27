@@ -11,7 +11,7 @@ function showScreen(name) {
     screen.classList.remove('active');
     screen.removeAttribute('data-anim');
   });
-  
+
   const targetScreen = document.getElementById(`screen-${name}`);
   if (targetScreen) {
     targetScreen.classList.add('active');
@@ -20,17 +20,17 @@ function showScreen(name) {
   }
 }
 
-function renderResults(trip, coords, weather, plan, imageSrc = null) {
-  document.getElementById('res-from').textContent = trip.from;
+function renderResults(trip, coords, weather, plan, imageSrc = null, originName = trip.from) {
+  document.getElementById('res-from').textContent = originName;
   document.getElementById('res-to').textContent = `${coords.name}, ${coords.country}`;
-  
+
   const formatOpt = { day: 'numeric', month: 'short', year: 'numeric' };
   const dStart = new Date(trip.start + "T00:00:00").toLocaleDateString('en-GB', formatOpt);
   const dEnd = new Date(trip.end + "T00:00:00").toLocaleDateString('en-GB', formatOpt);
   document.getElementById('res-dates').textContent = `${dStart} – ${dEnd}`;
-  
+
   document.getElementById('res-travelers').textContent = trip.travelers === 1 ? "1 traveller" : `${trip.travelers} travellers`;
-  
+
   document.getElementById('res-weather').textContent = plan.weather;
   const noteEl = document.getElementById('res-weather-note');
   if (weather.type === "forecast") {
@@ -38,10 +38,10 @@ function renderResults(trip, coords, weather, plan, imageSrc = null) {
   } else {
     noteEl.textContent = "Typical weather for the season, not a live forecast.";
   }
-  
+
   document.getElementById('res-flight').textContent = plan.flight;
   document.getElementById('res-hotel').textContent = plan.hotel;
-  
+
   const activitiesList = document.getElementById('res-activities');
   activitiesList.innerHTML = '';
   plan.activities.forEach(act => {
@@ -49,13 +49,13 @@ function renderResults(trip, coords, weather, plan, imageSrc = null) {
     li.textContent = act;
     activitiesList.appendChild(li);
   });
-  
-  const flightQuery = encodeURIComponent(`Flights from ${trip.from} to ${coords.name} on ${trip.start} returning ${trip.end}`);
+
+  const flightQuery = encodeURIComponent(`Flights from ${originName} to ${coords.name} on ${trip.start} returning ${trip.end}`);
   document.getElementById('link-flight').href = `https://www.google.com/travel/flights?q=${flightQuery}`;
-  
+
   const hotelQuery = encodeURIComponent(`Hotels in ${coords.name} from ${trip.start} to ${trip.end}`);
   document.getElementById('link-hotel').href = `https://www.google.com/travel/hotels?q=${hotelQuery}`;
-  
+
   const artWrap = document.querySelector('.art-wrap');
   if (imageSrc) {
     const artFrame = document.getElementById('art-frame');
@@ -64,7 +64,7 @@ function renderResults(trip, coords, weather, plan, imageSrc = null) {
     img.src = imageSrc;
     img.alt = `Postcard illustration of ${coords.name}`;
     artFrame.appendChild(img);
-    
+
     document.getElementById('art-caption-city').textContent = coords.name;
     artWrap.style.display = 'block';
   } else {
@@ -120,79 +120,87 @@ document.getElementById('btn-edit').addEventListener('click', () => {
 
 document.getElementById('trip-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  
+
   const errorEl = document.getElementById('form-error');
-  errorEl.textContent = ''; 
-  
+  errorEl.textContent = '';
+
   const from = document.getElementById('from').value.trim();
   const to = document.getElementById('to').value.trim();
   const start = document.getElementById('start').value;
   const end = document.getElementById('end').value;
   const budgetRaw = document.getElementById('budget').value.trim();
   const budget = Number(budgetRaw);
-  
+
   if (!from || !to) {
     errorEl.textContent = "Please add both a starting point and a destination.";
     return;
   }
-  
+
   if (!start || !end) {
     errorEl.textContent = "Please select your departure and return dates.";
     return;
   }
-  
+
   const today = new Date().toISOString().slice(0, 10);
   if (start < today) {
     errorEl.textContent = "Departure date cannot be in the past.";
     return;
   }
-  
+
   if (end <= start) {
     errorEl.textContent = "Return date needs to be after the departure date.";
     return;
   }
-  
+
   if (!budgetRaw || isNaN(budget) || budget < 0) {
     errorEl.textContent = "Please add a budget of 0 or more.";
     return;
   }
-  
+
   const trip = { from, to, start, end, budget, travelers };
-  
+
   const submitBtn = e.target.querySelector('button[type="submit"]');
   submitBtn.disabled = true;
   submitBtn.textContent = "Planning your trip...";
-  
+
   showScreen('loading');
   document.getElementById('loading-city').textContent = `Checking the weather in ${trip.to}...`;
-  
+
   try {
+    const originCoords = await getCoordinates(trip.from).catch(err => {
+      if (err.message === "City not found") throw new Error("Origin not found");
+      throw err;
+    });
+    const originName = originCoords.name;
+
     const coords = await getCoordinates(trip.to);
     const weather = await getWeather(coords.lat, coords.lon, trip.start);
     const summary = summarizeWeather(weather, trip.start, trip.end);
-    
+
     console.log("Trip Details:", trip);
     console.log("Found Coordinates:", coords);
     console.log("Weather Summary:", summary);
-    
+
     document.getElementById('loading-city').textContent = "Putting your plan together...";
-    
+
     const imagePromise = ENABLE_IMAGES
       ? generateDestinationImage(coords).catch(err => { console.error("Image gen failed:", err); return null; })
       : Promise.resolve(null);
-      
-    const planPromise = getTripPlan(trip, coords, summary);
-    
+
+    const planPromise = getTripPlan(trip, coords, summary, originName);
+
     const [plan, imageSrc] = await Promise.all([planPromise, imagePromise]);
     console.log("Trip Plan:", plan);
-    
-    renderResults(trip, coords, weather, plan, imageSrc);
+
+    renderResults(trip, coords, weather, plan, imageSrc, originName);
     history.replaceState(null, '', location.pathname + location.search + '#trip=' + encodeTrip(trip));
     showScreen('results');
   } catch (err) {
     console.error(err);
     showScreen('form');
-    if (err.message === "City not found") {
+    if (err.message === "Origin not found") {
+      errorEl.textContent = "We couldn't find your departure city. Check the spelling.";
+    } else if (err.message === "City not found") {
       errorEl.textContent = "We couldn't find that destination. Check the spelling.";
     } else if (err.message.startsWith("Weather API error") || err.message.startsWith("Geocoding API error")) {
       errorEl.textContent = "Couldn't reach the weather service. Try again.";
@@ -208,7 +216,7 @@ document.getElementById('trip-form').addEventListener('submit', async (e) => {
 // --- Share Button Mantığı ---
 document.getElementById('btn-share').addEventListener('click', async () => {
   const url = window.location.href;
-  
+
   try {
     await navigator.clipboard.writeText(url);
     const toast = document.getElementById('toast');
@@ -235,7 +243,7 @@ function loadTripFromHash() {
         travelers = Math.min(Math.max(trip.travelers, 1), 12);
         renderTravelers();
       }
-      
+
       showScreen('form');
       const form = document.getElementById('trip-form');
       form.requestSubmit();
