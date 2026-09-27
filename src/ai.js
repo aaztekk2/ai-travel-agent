@@ -47,3 +47,20 @@ The JSON object must exactly match the following structure, with no additional k
 
   return JSON.parse(response.choices[0].message.content);
 }
+
+export async function generateDestinationImage(destination) {
+  const prompt = `A warm, painterly postcard illustration of ${destination.name}, ${destination.country}, showing a recognizable landmark or street scene. No text, no letters, no words anywhere in the image.`;
+  const response = await openai.images.generate({
+    model: "gpt-image-1-mini",
+    prompt: prompt,
+    n: 1,
+    size: "1024x1024",
+    quality: "low"
+  });
+
+  const imgData = response.data[0];
+  if (imgData.b64_json) {
+    return "data:image/png;base64," + imgData.b64_json;
+  }
+  return imgData.url;
+}

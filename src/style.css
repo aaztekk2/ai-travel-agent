@@ -281,7 +281,6 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    min-height: 100vh;
     padding: 40px 20px;
   }
   #screen-loading.active {
@@ -328,3 +327,5 @@
       transform: none;
     }
   }
+
+  .art-frame img { width: 100%; height: auto; display: block; }

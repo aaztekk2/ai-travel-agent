@@ -1,7 +1,9 @@
 import './style.css';
 import { getCoordinates, getWeather, summarizeWeather } from './weather.js';
-import { getTripPlan } from './ai.js';
+import { getTripPlan, generateDestinationImage } from './ai.js';
 import { encodeTrip, decodeTrip } from './share.js';
+
+const ENABLE_IMAGES = true;
 
 function showScreen(name) {
   const screens = document.querySelectorAll('.screen');
@@ -18,7 +20,7 @@ function showScreen(name) {
   }
 }
 
-function renderResults(trip, coords, weather, plan) {
+function renderResults(trip, coords, weather, plan, imageSrc = null) {
   document.getElementById('res-from').textContent = trip.from;
   document.getElementById('res-to').textContent = `${coords.name}, ${coords.country}`;
   
@@ -53,6 +55,21 @@ function renderResults(trip, coords, weather, plan) {
   
   const hotelQuery = encodeURIComponent(`Hotels in ${coords.name} from ${trip.start} to ${trip.end}`);
   document.getElementById('link-hotel').href = `https://www.google.com/travel/hotels?q=${hotelQuery}`;
+  
+  const artWrap = document.querySelector('.art-wrap');
+  if (imageSrc) {
+    const artFrame = document.getElementById('art-frame');
+    artFrame.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = imageSrc;
+    img.alt = `Postcard illustration of ${coords.name}`;
+    artFrame.appendChild(img);
+    
+    document.getElementById('art-caption-city').textContent = coords.name;
+    artWrap.style.display = 'block';
+  } else {
+    artWrap.style.display = 'none';
+  }
 }
 
 // --- Travellers Stepper Mantığı ---
@@ -159,10 +176,17 @@ document.getElementById('trip-form').addEventListener('submit', async (e) => {
     console.log("Weather Summary:", summary);
     
     document.getElementById('loading-city').textContent = "Putting your plan together...";
-    const plan = await getTripPlan(trip, coords, summary);
+    
+    const imagePromise = ENABLE_IMAGES
+      ? generateDestinationImage(coords).catch(err => { console.error("Image gen failed:", err); return null; })
+      : Promise.resolve(null);
+      
+    const planPromise = getTripPlan(trip, coords, summary);
+    
+    const [plan, imageSrc] = await Promise.all([planPromise, imagePromise]);
     console.log("Trip Plan:", plan);
     
-    renderResults(trip, coords, weather, plan);
+    renderResults(trip, coords, weather, plan, imageSrc);
     history.replaceState(null, '', location.pathname + location.search + '#trip=' + encodeTrip(trip));
     showScreen('results');
   } catch (err) {
