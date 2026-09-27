@@ -100,7 +100,7 @@
         </div>
         <div class="perforation"><span class="notch left"></span><span class="notch right"></span></div>
 
-        <div class="art-wrap">
+        <div class="art-wrap" style="display:none">
           <div class="art-frame" id="art-frame"></div>
           <p class="art-caption">Generated postcard art for <span id="art-caption-city">—</span></p>
         </div>
@@ -108,7 +108,7 @@
         <div class="section">
           <h3>Weather</h3>
           <p id="res-weather"></p>
-          <p class="fine">General seasonal guide, not a live forecast — worth checking again closer to departure.</p>
+          <p class="fine" id="res-weather-note">General seasonal guide, not a live forecast — worth checking again closer to departure.</p>
         </div>
 
         <div class="perforation"></div>
@@ -123,7 +123,6 @@
 
         <div class="section">
           <h3>Where to stay</h3>
-          <div><span class="tier" id="res-tier"></span></div>
           <p id="res-hotel"></p>
           <a class="link-out" id="link-hotel" href="#" target="_blank" rel="noopener">Search places to stay →</a>
         </div>

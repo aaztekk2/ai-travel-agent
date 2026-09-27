@@ -272,3 +272,5 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   ::selection { background: var(--accent); color: var(--accent-ink); }
+
+  .btn:disabled { opacity: 0.6; cursor: wait; }
