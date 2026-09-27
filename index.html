@@ -4,12 +4,146 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <title>AI Travel Agent</title>
 </head>
 
 <body>
-  <div id="app"></div>
+  <div class="stage">
+    <div class="brandmark"><span class="dot"></span>AI Travel Agent</div>
+
+    <!-- SCREEN 1: intro -->
+    <section class="screen active" id="screen-intro">
+      <div class="intro">
+        <h1>Where are<br>we headed?</h1>
+        <p class="lede">Give it your dates, your people, and your budget — it sketches out the flights, the stay, the weather, and a few things worth doing.</p>
+        <svg class="flightpath" viewBox="0 0 400 150" aria-hidden="true">
+          <path class="path" d="M20,120 C 140,10 260,10 380,60" />
+          <circle class="dot" cx="20" cy="120" r="5"></circle>
+          <circle class="dot" cx="380" cy="60" r="5"></circle>
+          <text class="city-label" x="6" y="140">Home</text>
+          <text class="city-label" x="394" y="82" text-anchor="end">Somewhere new</text>
+          <g class="plane">
+            <path d="M0,-6 L14,0 L0,6 L3,0 Z" fill="#C1502E"></path>
+          </g>
+        </svg>
+        <div>
+          <button class="btn btn-primary" id="btn-begin">Let's begin</button>
+          <p class="hint">Takes about a minute</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: form -->
+    <section class="screen" id="screen-form">
+      <div class="form-head">
+        <h2>Plan the trip</h2>
+        <p>Please note: data is sent to OpenWeather and OpenAI for processing.</p>
+      </div>
+
+      <form id="trip-form" novalidate>
+        <div class="field">
+          <label>Travellers</label>
+          <div class="stepper">
+            <button type="button" id="dec-travelers" aria-label="Fewer travellers">–</button>
+            <span class="count" id="travelers-count">1</span>
+            <button type="button" id="inc-travelers" aria-label="More travellers">+</button>
+          </div>
+        </div>
+
+        <div class="swap-row">
+          <div class="field">
+            <label for="from">Flying from</label>
+            <input id="from" name="from" type="text" placeholder="Istanbul" autocomplete="off" required>
+          </div>
+          <button type="button" class="swap-btn" id="swap-btn" aria-label="Swap origin and destination">⇅</button>
+          <div class="field">
+            <label for="to">Flying to</label>
+            <input id="to" name="to" type="text" placeholder="Lisbon" autocomplete="off" required>
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label for="start">Depart</label>
+            <input id="start" name="start" type="date" required>
+          </div>
+          <div class="field">
+            <label for="end">Return</label>
+            <input id="end" name="end" type="date" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="budget">Total budget (USD)</label>
+          <input id="budget" name="budget" type="number" min="0" step="50" placeholder="2000" required>
+        </div>
+
+        <p class="error-msg" id="form-error" role="alert"></p>
+
+        <button type="submit" class="btn btn-primary">Plan my trip</button>
+      </form>
+    </section>
+
+    <!-- SCREEN 3: results -->
+    <section class="screen" id="screen-results">
+      <div class="ticket">
+        <div class="ticket-head">
+          <div class="ticket-route"><span id="res-from">—</span><span class="arrow">✈</span><span id="res-to">—</span></div>
+          <div class="ticket-meta">
+            <span id="res-dates">—</span>
+            <span id="res-travelers">—</span>
+          </div>
+        </div>
+        <div class="perforation"><span class="notch left"></span><span class="notch right"></span></div>
+
+        <div class="art-wrap">
+          <div class="art-frame" id="art-frame"></div>
+          <p class="art-caption">Generated postcard art for <span id="art-caption-city">—</span></p>
+        </div>
+
+        <div class="section">
+          <h3>Weather</h3>
+          <p id="res-weather"></p>
+          <p class="fine">General seasonal guide, not a live forecast — worth checking again closer to departure.</p>
+        </div>
+
+        <div class="perforation"></div>
+
+        <div class="section">
+          <h3>Flight</h3>
+          <p id="res-flight"></p>
+          <a class="link-out" id="link-flight" href="#" target="_blank" rel="noopener">Search this route →</a>
+        </div>
+
+        <div class="perforation"></div>
+
+        <div class="section">
+          <h3>Where to stay</h3>
+          <div><span class="tier" id="res-tier"></span></div>
+          <p id="res-hotel"></p>
+          <a class="link-out" id="link-hotel" href="#" target="_blank" rel="noopener">Search places to stay →</a>
+        </div>
+
+        <div class="perforation"></div>
+
+        <div class="section">
+          <h3>Things to do</h3>
+          <ul class="activity-list" id="res-activities"></ul>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="btn-share">Share this trip</button>
+        <button class="btn btn-ghost" id="btn-edit">Edit details</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
   <script type="module" src="/src/main.js"></script>
 </body>
 
